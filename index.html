@@ -12,15 +12,18 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <style>
   :root{
-    --bg:#0D1B2A;
+    --bg:#040B14;
+    --atmosphere:#0A1525;
     --sky:#1B4965;
     --ground:#3D2817;
     --amber:#F2A93B;
-    --chalk:#E8E4D9;
-    --muted:#5C7080;
-    --work:#5FB85C;
-    --panel:#13243750;
-    --line:#2A3F52;
+    --chalk:#EAF7FF;
+    --muted:#6E89A3;
+    --work:#6EF5A5;
+    --cyan:#7DF9FF;
+    --cyan2:#5DAEFF;
+    --panel:#0A1525CC;
+    --line:#1C3349;
     --max:1180px;
   }
   *{box-sizing:border-box;}
@@ -31,14 +34,35 @@
   }
   body{
     margin:0;
-    background:var(--bg);
+    background:
+      radial-gradient(ellipse 1200px 800px at 50% -10%, #102136 0%, transparent 60%),
+      radial-gradient(ellipse 900px 700px at 90% 110%, #0c1d2e 0%, transparent 55%),
+      var(--bg);
     color:var(--chalk);
     font-family:'IBM Plex Sans', sans-serif;
     line-height:1.55;
     -webkit-font-smoothing:antialiased;
+    position:relative;
   }
   ::selection{background:var(--amber); color:var(--bg);}
   a{color:var(--amber);}
+
+  #starfield{
+    position:fixed; inset:0; width:100%; height:100%;
+    z-index:-2; pointer-events:none;
+  }
+  #spotlight{
+    position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:radial-gradient(560px circle at var(--mx,50%) var(--my,30%), #7DF9FF14, transparent 70%);
+    transition:opacity .4s;
+  }
+  .drift{
+    position:fixed; pointer-events:none; z-index:-1;
+    opacity:.07; stroke:var(--cyan); fill:none;
+  }
+  @keyframes driftA{ 0%{transform:translate(0,0) rotate(0deg);} 50%{transform:translate(30px,-20px) rotate(8deg);} 100%{transform:translate(0,0) rotate(0deg);} }
+  @keyframes driftB{ 0%{transform:translate(0,0) rotate(0deg);} 50%{transform:translate(-25px,25px) rotate(-6deg);} 100%{transform:translate(0,0) rotate(0deg);} }
+  @keyframes driftC{ 0%{transform:translateY(0) rotate(0deg);} 100%{transform:translateY(-18px) rotate(360deg);} }
 
   .eyebrow{
     font-family:'IBM Plex Mono', monospace;
@@ -91,14 +115,39 @@
     text-align:center;
     overflow:hidden;
   }
-  .horizon-wrap{
+  .horizon-stage{
+    position:relative;
     width:min(62vw, 420px);
     aspect-ratio:1/1;
+    margin-bottom:36px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .ring{
+    position:absolute; border-radius:50%;
+    border:1px solid var(--cyan2); opacity:.25;
+    pointer-events:none;
+  }
+  .ring.r1{inset:-7%; animation:spin 38s linear infinite;}
+  .ring.r2{inset:-15%; border-style:dashed; opacity:.16; animation:spin 60s linear infinite reverse;}
+  .ring.r3{inset:-22%; opacity:.1; border-color:var(--amber); animation:spin 90s linear infinite;}
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .marker{
+    position:absolute; width:6px; height:6px; border-radius:50%;
+    background:var(--cyan); box-shadow:0 0 8px 2px var(--cyan);
+    top:-3px; left:50%; margin-left:-3px;
+  }
+  .ring.r1 .marker{animation:spin 38s linear infinite;}
+
+  .horizon-wrap{
+    width:100%; height:100%;
     border-radius:50%;
     position:relative;
-    margin-bottom:36px;
     border:3px solid var(--amber);
-    box-shadow:0 0 0 1px #00000080, 0 30px 80px -20px #000000aa;
+    box-shadow:
+      0 0 0 1px #00000080,
+      0 30px 80px -20px #000000aa,
+      0 0 60px -10px #7DF9FF40,
+      inset 0 0 40px -6px #7DF9FF30;
     overflow:hidden;
     background:var(--sky);
   }
@@ -106,7 +155,7 @@
     position:absolute;
     inset:-40%;
     background:linear-gradient(to bottom, var(--sky) 0%, var(--sky) 50%, var(--ground) 50%, var(--ground) 100%);
-    transition:transform .08s linear;
+    will-change:transform;
   }
   .horizon-disc .ladder{
     position:absolute; left:50%; top:50%;
@@ -123,12 +172,23 @@
     position:absolute; inset:0; pointer-events:none;
   }
   .horizon-fixed svg{width:100%; height:100%;}
+  .horizon-glass{
+    position:absolute; inset:0; pointer-events:none; border-radius:50%;
+    background:radial-gradient(circle at 32% 26%, #ffffff35, transparent 45%);
+  }
+  .hud{
+    position:absolute; left:50%; bottom:-34px; transform:translateX(-50%);
+    display:flex; gap:18px;
+    font-family:'IBM Plex Mono', monospace; font-size:.62rem; letter-spacing:.08em;
+    color:var(--cyan2); white-space:nowrap; opacity:.8;
+  }
+  .hud span b{color:var(--chalk); font-weight:500;}
   .hero h1{
     font-size:clamp(2.4rem, 7vw, 4.6rem);
     line-height:.95;
     color:var(--chalk);
   }
-  .hero h1 span{color:var(--amber);}
+  .hero h1 span{color:var(--amber); text-shadow:0 0 30px #F2A93B55;}
   .hero p.lede{
     max-width:480px;
     color:var(--muted);
@@ -137,7 +197,7 @@
   }
   .hero .eyebrow{margin-bottom:10px;}
   .scrollcue{
-    margin-top:46px;
+    margin-top:60px;
     font-family:'IBM Plex Mono', monospace;
     font-size:.7rem;
     letter-spacing:.14em;
@@ -168,9 +228,10 @@
   }
   .legend span{display:inline-flex; align-items:center; gap:7px;}
   .legend i{width:14px; height:2px; display:inline-block;}
-  .legend i.solid{background:var(--amber);}
+  .legend i.solid{background:var(--cyan);}
   .legend i.dash{background:repeating-linear-gradient(90deg, var(--work) 0 4px, transparent 4px 7px);}
   .legend i.dot{width:7px;height:7px;border-radius:50%;background:var(--work);}
+  .legend i.crit{background:var(--amber); box-shadow:0 0 6px 1px var(--amber);}
 
   /* ---------- LAYER SECTIONS ---------- */
   .layer{
@@ -209,6 +270,22 @@
     pointer-events:none;
     overflow:visible;
   }
+  .schematic svg.connectors path{
+    stroke-dasharray:6 5;
+    animation:pulse 2.6s linear infinite;
+  }
+  .schematic svg.connectors path.applied{
+    stroke-dasharray:4 4;
+  }
+  .schematic svg.connectors path.lit{
+    stroke:var(--amber) !important;
+    stroke-width:2 !important;
+    opacity:.95 !important;
+    filter:drop-shadow(0 0 4px #F2A93B90);
+    animation:pulseLit 1.4s linear infinite;
+  }
+  @keyframes pulse{ to{ stroke-dashoffset:-44; } }
+  @keyframes pulseLit{ to{ stroke-dashoffset:-44; } }
   .grid{
     display:grid;
     grid-template-columns:repeat(4, 1fr);
@@ -217,20 +294,39 @@
     z-index:2;
   }
   .node{
-    background:#0F2030;
+    background:linear-gradient(160deg, #0B1C2D, #081420);
     border:1px solid var(--line);
-    border-radius:3px;
+    border-radius:4px;
     padding:13px 14px;
     text-align:left;
     cursor:pointer;
     color:var(--chalk);
     font-family:'IBM Plex Sans', sans-serif;
-    transition:border-color .15s, transform .15s, background .15s;
+    transition:border-color .2s, transform .2s, box-shadow .2s, background .2s;
     position:relative;
+    animation:idleFloat 6s ease-in-out infinite;
+    animation-delay:calc(var(--i, 0) * .35s);
+    box-shadow:0 0 0 0 transparent;
   }
-  .node:hover{border-color:var(--amber); transform:translateY(-2px);}
-  .node:focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
-  .node.active{border-color:var(--amber); background:#16283b;}
+  @keyframes idleFloat{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-3px);} }
+  .node:hover{
+    border-color:var(--cyan);
+    transform:translateY(-5px) scale(1.015);
+    box-shadow:0 14px 30px -14px #000a, 0 0 22px -4px #7DF9FF55;
+    animation-play-state:paused;
+    z-index:5;
+  }
+  .node:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  .node.active{
+    border-color:var(--amber);
+    background:linear-gradient(160deg, #16283b, #0c1c2b);
+    box-shadow:0 0 0 1px #F2A93B55, 0 0 28px -6px #F2A93B70;
+    animation-play-state:paused;
+  }
+  .node.lit:not(.active){
+    border-color:var(--amber);
+    box-shadow:0 0 18px -6px #F2A93B80;
+  }
   .node .label{
     font-family:'IBM Plex Mono', monospace;
     font-weight:600;
@@ -249,20 +345,25 @@
     position:absolute; top:9px; right:9px;
     width:7px; height:7px; border-radius:50%;
     background:var(--work);
+    box-shadow:0 0 7px 1px #6EF5A5aa;
   }
 
   .detail{
     grid-column:1 / -1;
-    background:#0F2030;
+    background:linear-gradient(160deg, #0B1C2D, #081420);
     border:1px solid var(--amber);
-    border-radius:3px;
+    border-radius:4px;
     padding:20px 22px;
     margin-top:4px;
     display:none;
-    animation:reveal .25s ease;
+    box-shadow:0 0 40px -10px #F2A93B40;
+    animation:reveal .3s ease;
   }
   .detail.show{display:block;}
-  @keyframes reveal{ from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes reveal{
+    from{opacity:0; transform:translateY(-6px); box-shadow:0 0 0 0 transparent;}
+    to{opacity:1; transform:translateY(0); box-shadow:0 0 40px -10px #F2A93B40;}
+  }
   .detail .dtitle{
     font-family:'IBM Plex Mono', monospace;
     font-size:.82rem; font-weight:600; color:var(--amber);
@@ -272,13 +373,18 @@
   .detail .formula{
     font-family:'IBM Plex Mono', monospace;
     font-size:.82rem;
-    background:#091622;
+    background:#040C16;
     border:1px solid var(--line);
     border-radius:3px;
     padding:10px 12px;
     color:var(--amber);
     overflow-x:auto;
     margin-bottom:10px;
+    transition:box-shadow .25s, transform .25s;
+  }
+  .detail .formula:hover{
+    box-shadow:0 0 26px -6px #F2A93B70;
+    transform:scale(1.01);
   }
   .detail .workbadge{
     font-family:'IBM Plex Mono', monospace;
@@ -286,7 +392,7 @@
     color:var(--work);
     display:inline-flex; align-items:center; gap:6px;
   }
-  .detail .workbadge::before{content:''; width:7px; height:7px; border-radius:50%; background:var(--work);}
+  .detail .workbadge::before{content:''; width:7px; height:7px; border-radius:50%; background:var(--work); box-shadow:0 0 6px 1px #6EF5A5aa;}
 
   /* KaTeX color overrides to match theme */
   .node .label .katex{color:var(--chalk); font-size:1.05em;}
@@ -315,18 +421,36 @@
 </head>
 <body>
 
+<canvas id="starfield"></canvas>
+<div id="spotlight"></div>
+
+<svg class="drift" style="top:8%; left:4%; width:140px; height:140px; animation:driftA 26s ease-in-out infinite;" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" stroke-dasharray="2 6"/><circle cx="50" cy="50" r="30"/><line x1="50" y1="2" x2="50" y2="98"/><line x1="2" y1="50" x2="98" y2="50"/></svg>
+<svg class="drift" style="top:55%; right:6%; width:180px; height:90px; animation:driftB 32s ease-in-out infinite;" viewBox="0 0 200 100"><path d="M5 70 Q70 10 195 50 Q120 60 60 95 Q40 80 5 70 Z"/></svg>
+<svg class="drift" style="top:22%; right:14%; width:100px; height:100px; animation:driftC 40s linear infinite;" viewBox="0 0 100 100"><polygon points="50,4 96,50 50,96 4,50"/><circle cx="50" cy="50" r="4" fill="currentColor"/></svg>
+<svg class="drift" style="top:75%; left:10%; width:120px; height:60px; animation:driftA 34s ease-in-out infinite reverse;" viewBox="0 0 160 70"><path d="M2 50 C40 10, 120 10, 158 50" stroke-dasharray="3 5"/></svg>
+
 <nav class="navdots" id="navdots" aria-label="Layer navigation"></nav>
 
 <section class="hero">
   <div class="eyebrow">A Learning Artifact</div>
-  <div class="horizon-wrap" id="horizon">
-    <div class="horizon-disc" id="horizonDisc">
-      <div class="ladder">
-        <div class="rung"></div><div class="rung"></div><div class="rung"></div><div class="rung"></div>
+  <div class="horizon-stage">
+    <div class="ring r3"></div>
+    <div class="ring r2"></div>
+    <div class="ring r1"><span class="marker"></span></div>
+    <div class="horizon-wrap" id="horizon">
+      <div class="horizon-disc" id="horizonDisc">
+        <div class="ladder">
+          <div class="rung"></div><div class="rung"></div><div class="rung"></div><div class="rung"></div>
+        </div>
+      </div>
+      <div class="horizon-glass"></div>
+      <div class="horizon-fixed">
+        <svg viewBox="0 0 100 100"><line x1="30" y1="50" x2="42" y2="50" stroke="#F2A93B" stroke-width="2"/><line x1="58" y1="50" x2="70" y2="50" stroke="#F2A93B" stroke-width="2"/><circle cx="50" cy="50" r="1.6" fill="#F2A93B"/></svg>
       </div>
     </div>
-    <div class="horizon-fixed">
-      <svg viewBox="0 0 100 100"><line x1="30" y1="50" x2="42" y2="50" stroke="#F2A93B" stroke-width="2"/><line x1="58" y1="50" x2="70" y2="50" stroke="#F2A93B" stroke-width="2"/><circle cx="50" cy="50" r="1.6" fill="#F2A93B"/></svg>
+    <div class="hud">
+      <span>PITCH <b id="hudPitch">00.0</b>°</span>
+      <span>ROLL <b id="hudRoll">00.0</b>°</span>
     </div>
   </div>
   <h1>Stability<br><span>&amp; Control</span></h1>
@@ -340,6 +464,7 @@
     <span><i class="solid"></i> derives / feeds into</span>
     <span><i class="dash"></i> applied connection</span>
     <span><i class="dot"></i> ties to real engineering work</span>
+    <span><i class="crit"></i> active dependency chain (click a node)</span>
   </div>
 </div>
 
@@ -348,12 +473,12 @@
 <footer>
   <div>
     <div class="name">Dhruv Arora</div>
-    <div>Flight Physics &amp; Engineering Automation</div>
+    <div>Flight Physics Capabilities | Engineering Automation | Solution Developer | Aeronautical Engineer</div>
   </div>
   <div>
-    <a href="https://www.linkedin.com/in/dhruvarora-7a785a159" target="_blank" rel="noopener">LinkedIn</a>
+    <a href="https://www.linkedin.com/in/dhruvarora-7a785a159/" target="_blank" rel="noopener">LinkedIn</a>
     <a href="https://www.behance.net/thenovicedesigner" target="_blank" rel="noopener">Behance</a>
-    <a href="#" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/dxarora" target="_blank" rel="noopener">GitHub</a>
   </div>
 </footer>
 
@@ -447,12 +572,13 @@ LAYERS.forEach((layer, idx) => {
   layersEl.appendChild(section);
 
   const grid = section.querySelector('.grid');
-  layer.nodes.forEach(n => {
+  layer.nodes.forEach((n, i) => {
     const btn = document.createElement('button');
     btn.className = 'node';
     btn.dataset.id = n.id;
     btn.style.gridRow = n.r;
     btn.style.gridColumn = n.c;
+    btn.style.setProperty('--i', i % 6);
 
     const labelSpan = document.createElement('span');
     labelSpan.className = 'label';
@@ -487,9 +613,24 @@ LAYERS.forEach((layer, idx) => {
     if(!btn) return;
     const n = layer.nodes.find(x => x.id === btn.dataset.id);
     const wasActive = btn.classList.contains('active');
-    grid.querySelectorAll('.node').forEach(b => b.classList.remove('active'));
+    grid.querySelectorAll('.node').forEach(b => b.classList.remove('active', 'lit'));
+    section.querySelectorAll('svg.connectors path').forEach(p => p.classList.remove('lit'));
     if(wasActive){ detail.classList.remove('show'); return; }
     btn.classList.add('active');
+
+    // illuminate the directly-connected dependency chain
+    const connectedIds = new Set();
+    layer.edges.forEach(([fromId, toId]) => {
+      if(fromId === n.id) connectedIds.add(toId);
+      if(toId === n.id) connectedIds.add(fromId);
+    });
+    connectedIds.forEach(id => {
+      const el = section.querySelector(`.node[data-id="${id}"]`);
+      if(el) el.classList.add('lit');
+    });
+    section.querySelectorAll('svg.connectors path').forEach(p => {
+      if(p.dataset.from === n.id || p.dataset.to === n.id) p.classList.add('lit');
+    });
 
     detail.innerHTML = `
       <div class="dtitle"></div>
@@ -550,10 +691,12 @@ function drawConnectors(){
       const path = document.createElementNS('http://www.w3.org/2000/svg','path');
       path.setAttribute('d', `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`);
       path.setAttribute('fill', 'none');
-      path.setAttribute('stroke', applied ? '#5FB85C' : '#F2A93B');
+      path.setAttribute('stroke', applied ? '#6EF5A5' : '#7DF9FF');
       path.setAttribute('stroke-width', '1.4');
-      path.setAttribute('opacity', applied ? '0.55' : '0.4');
-      if(applied) path.setAttribute('stroke-dasharray', '4 4');
+      path.setAttribute('opacity', applied ? '0.5' : '0.4');
+      path.dataset.from = fromId;
+      path.dataset.to = toId;
+      if(applied) path.classList.add('applied');
       svg.appendChild(path);
     });
   });
@@ -575,21 +718,100 @@ const io = new IntersectionObserver((entries) => {
 }, {threshold:0.4});
 sections.forEach(s => io.observe(s));
 
-/* ---------------- HORIZON INTERACTION ---------------- */
+/* ---------------- HORIZON INTERACTION (inertial) ---------------- */
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const horizon = document.getElementById('horizon');
 const disc = document.getElementById('horizonDisc');
-if(!reduceMotion && horizon){
+const hudPitch = document.getElementById('hudPitch');
+const hudRoll = document.getElementById('hudRoll');
+let targetPx = 0, targetPy = 0, curPx = 0, curPy = 0;
+let pageVisible = true;
+document.addEventListener('visibilitychange', () => { pageVisible = document.visibilityState === 'visible'; });
+
+if(horizon){
   horizon.addEventListener('mousemove', (e) => {
     const rect = horizon.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width - 0.5;
-    const py = (e.clientY - rect.top) / rect.height - 0.5;
-    disc.style.transform = `rotate(${px * 26}deg) translateY(${py * 50}px)`;
+    targetPx = (e.clientX - rect.left) / rect.width - 0.5;
+    targetPy = (e.clientY - rect.top) / rect.height - 0.5;
   });
-  horizon.addEventListener('mouseleave', () => {
-    disc.style.transform = 'rotate(0deg) translateY(0px)';
-  });
+  horizon.addEventListener('mouseleave', () => { targetPx = 0; targetPy = 0; });
 }
+
+function horizonTick(){
+  if(pageVisible && horizon){
+    const ease = reduceMotion ? 1 : 0.07;
+    curPx += (targetPx - curPx) * ease;
+    curPy += (targetPy - curPy) * ease;
+    const roll = curPx * 26;
+    const pitch = curPy * 50;
+    if(disc) disc.style.transform = `rotate(${roll}deg) translateY(${pitch}px)`;
+    if(hudPitch) hudPitch.textContent = Math.abs(curPy * 18).toFixed(1);
+    if(hudRoll) hudRoll.textContent = Math.abs(roll).toFixed(1);
+  }
+  requestAnimationFrame(horizonTick);
+}
+requestAnimationFrame(horizonTick);
+
+/* ---------------- AMBIENT SPOTLIGHT ---------------- */
+if(!reduceMotion){
+  window.addEventListener('mousemove', (e) => {
+    document.documentElement.style.setProperty('--mx', e.clientX + 'px');
+    document.documentElement.style.setProperty('--my', e.clientY + 'px');
+  }, {passive:true});
+}
+
+/* ---------------- STARFIELD PARTICLES ---------------- */
+(function starfield(){
+  const canvas = document.getElementById('starfield');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let w, h, particles = [];
+  const COUNT = reduceMotion ? 0 : 70;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  function init(){
+    resize();
+    particles = Array.from({length:COUNT}, () => ({
+      x:Math.random()*w, y:Math.random()*h,
+      depth:0.3 + Math.random()*0.7,
+      r:0.6 + Math.random()*1.4,
+      tw:Math.random()*Math.PI*2,
+      vx:(Math.random()-0.5)*0.06,
+      vy:(Math.random()-0.5)*0.06
+    }));
+  }
+  let mouseX = -9999, mouseY = -9999;
+  window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; }, {passive:true});
+
+  function frame(t){
+    if(pageVisible && COUNT){
+      ctx.clearRect(0,0,w,h);
+      particles.forEach(p => {
+        p.x += p.vx * p.depth; p.y += p.vy * p.depth;
+        if(p.x < 0) p.x = w; if(p.x > w) p.x = 0;
+        if(p.y < 0) p.y = h; if(p.y > h) p.y = 0;
+        const dx = p.x - mouseX, dy = p.y - mouseY;
+        const distSq = dx*dx + dy*dy;
+        if(distSq < 6000){
+          const dist = Math.sqrt(distSq) || 1;
+          p.x += (dx/dist) * 0.6; p.y += (dy/dist) * 0.6;
+        }
+        const tw = 0.5 + Math.sin(t*0.001 + p.tw) * 0.5;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * p.depth, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(125,249,255,${(0.15 + tw*0.35) * p.depth})`;
+        ctx.fill();
+      });
+    }
+    requestAnimationFrame(frame);
+  }
+  init();
+  window.addEventListener('resize', () => requestAnimationFrame(init));
+  requestAnimationFrame(frame);
+})();
 </script>
 </body>
 </html>
