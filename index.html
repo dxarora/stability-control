@@ -47,6 +47,26 @@
   ::selection{background:var(--amber); color:var(--bg);}
   a{color:var(--amber);}
 
+  .module-nav{
+    position:fixed;top:18px;left:50%;transform:translateX(-50%);
+    z-index:60;display:flex;align-items:center;gap:4px;
+    padding:5px;background:#07111ECC;border:1px solid var(--line);
+    border-radius:4px;backdrop-filter:blur(10px);
+    font-family:'IBM Plex Mono',monospace;font-size:.66rem;
+    letter-spacing:.08em;text-transform:uppercase;
+  }
+  .module-nav a{
+    color:var(--muted);text-decoration:none;padding:6px 9px;border-radius:2px;
+    transition:color .2s,background .2s;
+  }
+  .module-nav a:hover,.module-nav a:focus-visible{color:var(--chalk);background:#13263A;}
+  .module-nav a[aria-current="page"]{color:var(--bg);background:var(--amber);}
+  .module-nav .home{color:var(--cyan);}
+  @media(max-width:600px){
+    .module-nav{top:10px;width:calc(100% - 24px);justify-content:center;font-size:.58rem;}
+    .module-nav a{padding:6px 7px;}
+  }
+
   #starfield{
     position:fixed; inset:0; width:100%; height:100%;
     z-index:-2; pointer-events:none;
@@ -421,6 +441,12 @@
 </head>
 <body>
 
+<nav class="module-nav" aria-label="Knowledge modules">
+  <a class="home" href="../">← HiveMind</a>
+  <a href="../aircraft-performance/">Performance</a>
+  <a href="./" aria-current="page">Stability &amp; Control</a>
+</nav>
+
 <canvas id="starfield"></canvas>
 <div id="spotlight"></div>
 
@@ -482,9 +508,10 @@
   </div>
 </footer>
 
+<script src="./data.js"></script>
 <script>
-/* ---------------- DATA ---------------- */
-const LAYERS = [
+/* ---------------- TEMPORARY INLINE FALLBACK — remove after data-module rollout ---------------- */
+const INLINE_LAYER_FALLBACK = [
 {
   id:'l1', num:'01', title:'Foundations', sub:'Equilibrium, the two flavors of stability, and where every later layer hangs off one number: static margin.',
   nodes:[
@@ -546,6 +573,8 @@ const LAYERS = [
   edges:[['rigid','ae'],['rigid','ctrl'],['ae','div'],['ae','flutter'],['ae','rev'],['ctrl','cmde'],['ctrl','clda'],['ctrl','cndr']]
 },
 ];
+
+const LAYERS = window.HiveMindModule?.layers || INLINE_LAYER_FALLBACK;
 
 /* ---------------- RENDER ---------------- */
 const layersEl = document.getElementById('layers');
@@ -615,8 +644,13 @@ LAYERS.forEach((layer, idx) => {
     const wasActive = btn.classList.contains('active');
     grid.querySelectorAll('.node').forEach(b => b.classList.remove('active', 'lit'));
     section.querySelectorAll('svg.connectors path').forEach(p => p.classList.remove('lit'));
-    if(wasActive){ detail.classList.remove('show'); return; }
+    if(wasActive){
+      detail.classList.remove('show');
+      if(e.isTrusted) history.pushState(null, '', location.pathname + location.search);
+      return;
+    }
     btn.classList.add('active');
+    if(e.isTrusted) history.pushState(null, '', `#topic=${encodeURIComponent(n.id)}`);
 
     // illuminate the directly-connected dependency chain
     const connectedIds = new Set();
@@ -665,6 +699,23 @@ LAYERS.forEach((layer, idx) => {
   dot.addEventListener('click', () => section.scrollIntoView({behavior:'smooth'}));
   navdots.appendChild(dot);
 });
+
+function openTopicFromURL(){
+  const match = location.hash.match(/^#topic=([^&]+)$/);
+  document.querySelectorAll('.node.active,.node.lit').forEach(el => el.classList.remove('active','lit'));
+  document.querySelectorAll('.detail.show').forEach(el => el.classList.remove('show'));
+  document.querySelectorAll('svg.connectors path.lit').forEach(el => el.classList.remove('lit'));
+  if(!match) return;
+
+  const id = decodeURIComponent(match[1]);
+  const btn = document.querySelector(`.node[data-id="${CSS.escape(id)}"]`);
+  if(!btn) return;
+  btn.click();
+  btn.closest('.layer').scrollIntoView({behavior:reduceMotion ? 'auto' : 'smooth', block:'start'});
+}
+
+window.addEventListener('popstate', openTopicFromURL);
+window.addEventListener('load', () => requestAnimationFrame(openTopicFromURL));
 
 /* ---------------- CONNECTOR LINES ---------------- */
 function drawConnectors(){
